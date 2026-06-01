@@ -220,7 +220,10 @@ THRESHOLD_VALUE = 128          # Ngưỡng nhị phân hóa
 MEAN_KERNEL_SIZE = 3           # Kích thước kernel Mean Filter
 GAUSSIAN_KERNEL_SIZE = 5       # Kích thước kernel Gaussian
 GAUSSIAN_SIGMA = 1.0           # Độ lệch chuẩn Gaussian
+MAX_CANH_XU_LY = 1280          # Tự thu nhỏ ảnh lớn (0 = tắt, xử lý full)
 ```
+
+Ảnh gốc 4000×2000 trên máy chậm có thể mất vài phút nếu `MAX_CANH_XU_LY = 0`. Mặc định **1280** giúp máy yếu chạy gần như ngay; file kết quả theo kích thước đã thu nhỏ.
 
 ---
 

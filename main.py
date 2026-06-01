@@ -31,8 +31,11 @@ MEAN_KERNEL_SIZE = 3
 GAUSSIAN_KERNEL_SIZE = 5
 GAUSSIAN_SIGMA = 1.0
 
-# So pixel canh bao anh lon (loc/sobel se cham hon)
+# So pixel canh bao anh lon
 NGUONG_ANH_LON = 2_000_000
+
+# Canh dai toi da khi xu ly (tu thu nho neu lon hon). Dat 0 de tat thu nho.
+MAX_CANH_XU_LY = 1280
 
 
 def cau_hinh_console_utf8() -> None:
@@ -87,9 +90,33 @@ def hien_menu_thuat_toan() -> None:
 
 
 def doc_anh(duong_dan: Path) -> np.ndarray | None:
-    """Doc anh tu duong dan; tra ve None neu khong doc duoc."""
+    """Đọc ảnh từ đường dẫn; trả về None nếu không đọc được."""
     anh = cv2.imread(str(duong_dan))
     return anh
+
+
+def thu_nho_anh_xu_ly(anh: np.ndarray) -> np.ndarray:
+    """
+    Tự thu nhỏ ảnh nếu cạnh dài > MAX_CANH_XU_LY.
+    Giúp thuật toán 4/5/6 (tích chập) chạy nhanh trên máy cấu hình thấp.
+    """
+    if MAX_CANH_XU_LY <= 0:
+        return anh
+
+    h, w = anh.shape[:2]
+    canh_lon = max(h, w)
+    if canh_lon <= MAX_CANH_XU_LY:
+        return anh
+
+    ty_le = MAX_CANH_XU_LY / canh_lon
+    w_moi = max(1, int(w * ty_le))
+    h_moi = max(1, int(h * ty_le))
+    print(
+        f"Tự thu nhỏ ảnh {w} x {h} -> {w_moi} x {h_moi} "
+        f"(tối đa {MAX_CANH_XU_LY}px/cạnh).",
+        flush=True,
+    )
+    return cv2.resize(anh, (w_moi, h_moi), interpolation=cv2.INTER_AREA)
 
 
 def tao_thu_muc_ket_qua(ten_thu_muc: str) -> Path:
@@ -123,12 +150,9 @@ def nhi_phan_hoa(anh_xam: np.ndarray, nguong: int = THRESHOLD_VALUE) -> np.ndarr
 
 def tinh_histogram(anh_xam: np.ndarray) -> np.ndarray:
     """
-    Histogram: dem so luong pixel theo tung muc cuong do 0-255.
+    Histogram: đếm số lượng pixel theo từng mức cường độ 0-255 (NumPy bincount).
     """
-    hist = np.zeros(256, dtype=np.int64)
-    for gia_tri in anh_xam.ravel():
-        hist[int(gia_tri)] += 1
-    return hist
+    return np.bincount(anh_xam.ravel(), minlength=256).astype(np.int64)
 
 
 def ve_va_luu_histogram(anh_xam: np.ndarray, duong_dan_luu: Path) -> None:
@@ -265,10 +289,15 @@ def in_thong_tin_anh(anh_bgr: np.ndarray) -> None:
     h, w = anh_bgr.shape[:2]
     so_pixel = h * w
     print(f"Kích thước ảnh: {w} x {h} ({so_pixel:,} pixel)", flush=True)
-    if so_pixel > NGUONG_ANH_LON:
+    if so_pixel > NGUONG_ANH_LON and MAX_CANH_XU_LY > 0:
         print(
-            "Cảnh báo: Ảnh lớn — thuật toán 4, 5, 6 có thể mất vài phút. "
-            "Vui lòng đợi, chương trình vẫn đang chạy.",
+            f"Cảnh báo: Ảnh lớn — sẽ tự thu nhỏ còn tối đa {MAX_CANH_XU_LY}px/cạnh "
+            "trước khi xử lý để chạy nhanh trên mọi máy.",
+            flush=True,
+        )
+    elif so_pixel > NGUONG_ANH_LON:
+        print(
+            "Cảnh báo: Ảnh lớn — thuật toán 4, 5, 6 có thể chạy rất chậm.",
             flush=True,
         )
 
@@ -400,7 +429,8 @@ def thuc_thi_thuat_toan(lua_chon: int, anh_bgr: np.ndarray) -> None:
 
     print(f"\nĐang chạy: {ten_thuat_toan[lua_chon]} ...", flush=True)
     try:
-        hanh_xu_ly[lua_chon](anh_bgr)
+        anh_xu_ly = thu_nho_anh_xu_ly(anh_bgr)
+        hanh_xu_ly[lua_chon](anh_xu_ly)
     except Exception as e:
         print(f"Lỗi khi xử lý: {e}", flush=True)
 
