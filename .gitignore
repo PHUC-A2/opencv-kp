@@ -1,6 +1,6 @@
 # Thư mục ảnh đầu vào và kết quả
 .venv/
-image/
+# image/
 __pycache__/
 *.pyc
 *.pyo
