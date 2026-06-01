@@ -21,6 +21,7 @@ Các thuật toán được **tự cài đặt** (công thức, tích chập, ke
 ```powershell
 cd project
 py -3.13 -m venv .venv
+hoặc py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
