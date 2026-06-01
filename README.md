@@ -187,6 +187,30 @@ Chương trình thông báo khi:
 
 ---
 
+## Máy khác “không chạy được” / treo sau khi chọn thuật toán?
+
+Thường **không phải lỗi**, mà do một trong các nguyên nhân sau:
+
+| Triệu chứng | Nguyên nhân | Cách xử lý |
+|-------------|-------------|------------|
+| Menu không có dấu tiếng Việt | Terminal Windows chưa UTF-8 | Chạy `chcp 65001` hoặc dùng bản `main.py` mới (tự cấu hình UTF-8) |
+| Dừng ở `Chọn thuật toán:` | Chưa nhập số + **Enter** | Gõ `1` rồi Enter (không chỉ gõ rồi đứng im) |
+| Không in gì sau khi chọn 4/5/6 | **Ảnh quá lớn** (vd. 4000×2000), xử lý rất lâu | Đợi thêm; bản mới in `Đang chạy: ...` và cảnh báo ảnh lớn. Thử ảnh nhỏ trước, hoặc chọn 1/2/3 |
+| Lỗi Histogram | Matplotlib cần GUI | Bản mới dùng backend `Agg` (không cần màn hình) |
+| `No module named 'cv2'` | Sai Python / chưa cài thư viện | Dùng `.venv`: `pip install -r requirements.txt` |
+
+**Kiểm tra nhanh trên máy mới:**
+
+```powershell
+cd F:\do-an\project\my-project
+.\.venv\Scripts\python.exe -c "import cv2, numpy, matplotlib; print('OK')"
+.\.venv\Scripts\python.exe main.py
+```
+
+Chọn ảnh → gõ `1` → Enter. Nếu thấy `Đã xử lý thành công...` và file `image/grayscale/result.jpg` thì môi trường đúng.
+
+---
+
 ## Tùy chỉnh (trong `main.py`)
 
 Có thể chỉnh các hằng số đầu file:

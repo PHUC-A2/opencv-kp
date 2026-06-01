@@ -1,7 +1,7 @@
-"""
-Ung dung thu vien OpenCV - cac thuat toan xu ly anh co ban.
-Chay terminal: py -3.13 main.py
-Cai dat: pip install opencv-python numpy matplotlib
+r"""
+Ứng dụng thư viện OpenCV - các thuật toán xử lý ảnh cơ bản.
+Chạy: .venv\Scripts\python.exe main.py
+Cài đặt: pip install opencv-python numpy matplotlib
 """
 
 from __future__ import annotations
@@ -10,6 +10,10 @@ import sys
 from pathlib import Path
 
 import cv2
+import matplotlib
+
+# Backend Agg: ve histogram khong can man hinh (tranh loi tren may khong co GUI)
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -27,6 +31,27 @@ MEAN_KERNEL_SIZE = 3
 GAUSSIAN_KERNEL_SIZE = 5
 GAUSSIAN_SIGMA = 1.0
 
+# So pixel canh bao anh lon (loc/sobel se cham hon)
+NGUONG_ANH_LON = 2_000_000
+
+
+def cau_hinh_console_utf8() -> None:
+    """Cau hinh terminal Windows hien thi tieng Viet (UTF-8)."""
+    if sys.platform != "win32":
+        return
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+        sys.stdin.reconfigure(encoding="utf-8")
+    except (AttributeError, OSError):
+        pass
+    try:
+        import os
+
+        os.system("chcp 65001 >nul 2>&1")
+    except OSError:
+        pass
+
 
 def quet_danh_sach_anh() -> list[Path]:
     """Quet thu muc image, tra ve danh sach file anh hop le (sap xep theo ten)."""
@@ -41,24 +66,24 @@ def quet_danh_sach_anh() -> list[Path]:
 
 
 def hien_menu_anh(danh_sach: list[Path]) -> None:
-    """In menu danh sach anh."""
-    print("\n===== DANH SACH ANH =====\n")
+    """In menu danh sách ảnh."""
+    print("\n===== DANH SÁCH ẢNH =====\n", flush=True)
     for i, duong_dan in enumerate(danh_sach, start=1):
-        print(f"{i}. {duong_dan.name}")
-    print("\n0. Thoat chuong trinh")
+        print(f"{i}. {duong_dan.name}", flush=True)
+    print("\n0. Thoát chương trình", flush=True)
 
 
 def hien_menu_thuat_toan() -> None:
-    """In menu cac thuat toan xu ly."""
-    print("\n===== THUAT TOAN =====\n")
-    print("1. Chuyen anh xam (Grayscale)")
-    print("2. Nhi phan hoa (Thresholding)")
-    print("3. Bieu do histogram (Histogram)")
-    print("4. Loc trung binh (Mean Filter)")
-    print("5. Loc Gaussian (Gaussian Filter)")
-    print("6. Phat hien bien Sobel (Sobel Edge Detection)")
-    print("7. Thoat chuong trinh")
-    print("8. Chon anh khac")
+    """In menu các thuật toán xử lý."""
+    print("\n===== THUẬT TOÁN =====\n", flush=True)
+    print("1. Chuyển ảnh xám (Grayscale)", flush=True)
+    print("2. Nhị phân hóa (Thresholding)", flush=True)
+    print("3. Biểu đồ histogram (Histogram)", flush=True)
+    print("4. Lọc trung bình (Mean Filter)", flush=True)
+    print("5. Lọc Gaussian (Gaussian Filter)", flush=True)
+    print("6. Phát hiện biên Sobel (Sobel Edge Detection)", flush=True)
+    print("7. Thoát chương trình", flush=True)
+    print("8. Chọn ảnh khác", flush=True)
 
 
 def doc_anh(duong_dan: Path) -> np.ndarray | None:
@@ -113,9 +138,9 @@ def ve_va_luu_histogram(anh_xam: np.ndarray, duong_dan_luu: Path) -> None:
 
     plt.figure(figsize=(10, 5))
     plt.bar(muc, hist, width=1.0, color="steelblue", edgecolor="none")
-    plt.title("Histogram anh xam")
-    plt.xlabel("Muc cuong do")
-    plt.ylabel("So luong pixel")
+    plt.title("Histogram ảnh xám")
+    plt.xlabel("Mức cường độ")
+    plt.ylabel("Số lượng pixel")
     plt.xlim(0, 255)
     plt.tight_layout()
     plt.savefig(str(duong_dan_luu), dpi=150)
@@ -226,13 +251,26 @@ def luu_anh_mau(anh_bgr: np.ndarray, duong_dan: Path) -> bool:
 
 
 def in_loi_luu_ket_qua() -> None:
-    """In thong bao loi khi khong ghi duoc file ket qua."""
-    print("Loi: khong luu duoc file ket qua. Vui long kiem tra lai duong dan.")
+    """In thông báo lỗi khi không ghi được file kết quả."""
+    print("Lỗi: không lưu được file kết quả. Vui lòng kiểm tra lại đường dẫn.", flush=True)
 
 
 def in_thanh_cong_luu(duong_dan: Path) -> None:
-    """In thong bao sau khi xu ly va luu file thanh cong."""
-    print(f"Da xu ly thanh cong. Ket qua da duoc luu tai: {duong_dan.resolve()}")
+    """In thông báo sau khi xử lý và lưu file thành công."""
+    print(f"Đã xử lý thành công. Kết quả đã được lưu tại: {duong_dan.resolve()}", flush=True)
+
+
+def in_thong_tin_anh(anh_bgr: np.ndarray) -> None:
+    """In kích thước ảnh và cảnh báo nếu ảnh lớn (xử lý có thể lâu)."""
+    h, w = anh_bgr.shape[:2]
+    so_pixel = h * w
+    print(f"Kích thước ảnh: {w} x {h} ({so_pixel:,} pixel)", flush=True)
+    if so_pixel > NGUONG_ANH_LON:
+        print(
+            "Cảnh báo: Ảnh lớn — thuật toán 4, 5, 6 có thể mất vài phút. "
+            "Vui lòng đợi, chương trình vẫn đang chạy.",
+            flush=True,
+        )
 
 
 def xu_ly_grayscale(anh_bgr: np.ndarray) -> Path | None:
@@ -267,7 +305,8 @@ def xu_ly_histogram(anh_bgr: np.ndarray) -> Path | None:
     duong_dan = thu_muc / "histogram.png"
     try:
         ve_va_luu_histogram(anh_xam, duong_dan)
-    except OSError:
+    except (OSError, RuntimeError, ValueError) as e:
+        print(f"Lỗi khi vẽ histogram: {e}", flush=True)
         in_loi_luu_ket_qua()
         return None
     in_thanh_cong_luu(duong_dan)
@@ -312,10 +351,13 @@ def xu_ly_sobel(anh_bgr: np.ndarray) -> Path | None:
 
 
 def nhap_so_nguyen(nhan: str) -> int | None:
-    """Doc so nguyen tu ban phim; tra ve None neu nhap khong hop le."""
+    """Đọc số nguyên từ bàn phím; trả về None nếu nhập không hợp lệ."""
     try:
-        return int(input(nhan).strip())
-    except ValueError:
+        chuoi = input(nhan).strip()
+        if not chuoi:
+            return None
+        return int(chuoi)
+    except (ValueError, EOFError):
         return None
 
 
@@ -326,29 +368,56 @@ def chon_anh(danh_sach: list[Path]) -> Path | None:
     """
     while True:
         hien_menu_anh(danh_sach)
-        lua_chon = nhap_so_nguyen("Chon anh: ")
+        lua_chon = nhap_so_nguyen("Chọn ảnh: ")
         if lua_chon is None:
-            print("Loi: vui long nhap so nguyen.")
+            print("Lỗi: vui lòng nhập số nguyên (ví dụ: 1).", flush=True)
             continue
         if lua_chon == 0:
             return None
         if 1 <= lua_chon <= len(danh_sach):
             return danh_sach[lua_chon - 1]
-        print(f"Loi: chon sai so. Hay nhap tu 0 den {len(danh_sach)}.")
+        print(f"Lỗi: chọn sai số. Hãy nhập từ 0 đến {len(danh_sach)}.", flush=True)
+
+
+def thuc_thi_thuat_toan(lua_chon: int, anh_bgr: np.ndarray) -> None:
+    """Gọi hàm xử lý tương ứng; bắt lỗi để in ra terminal thay vì thoát im lặng."""
+    ten_thuat_toan = {
+        1: "Chuyển ảnh xám (Grayscale)",
+        2: "Nhị phân hóa (Thresholding)",
+        3: "Biểu đồ histogram (Histogram)",
+        4: "Lọc trung bình (Mean Filter)",
+        5: "Lọc Gaussian (Gaussian Filter)",
+        6: "Phát hiện biên Sobel (Sobel Edge Detection)",
+    }
+    hanh_xu_ly = {
+        1: xu_ly_grayscale,
+        2: xu_ly_thresholding,
+        3: xu_ly_histogram,
+        4: xu_ly_mean_filter,
+        5: xu_ly_gaussian_filter,
+        6: xu_ly_sobel,
+    }
+
+    print(f"\nĐang chạy: {ten_thuat_toan[lua_chon]} ...", flush=True)
+    try:
+        hanh_xu_ly[lua_chon](anh_bgr)
+    except Exception as e:
+        print(f"Lỗi khi xử lý: {e}", flush=True)
 
 
 def vong_lap_thuat_toan(anh_bgr: np.ndarray, ten_anh: str) -> str:
     """
-    Vong lap menu thuat toan cho mot anh da chon.
-    Tra ve 'thoat' de ket thuc chuong trinh, 'doi_anh' de chon anh khac.
+    Vòng lặp menu thuật toán cho một ảnh đã chọn.
+    Trả về 'thoat' để kết thúc chương trình, 'doi_anh' để chọn ảnh khác.
     """
-    print(f"\nDang xu ly: {ten_anh}")
+    print(f"\nĐang xử lý: {ten_anh}", flush=True)
+    in_thong_tin_anh(anh_bgr)
 
     while True:
         hien_menu_thuat_toan()
-        lua_chon = nhap_so_nguyen("Chon thuat toan: ")
+        lua_chon = nhap_so_nguyen("Chọn thuật toán: ")
         if lua_chon is None:
-            print("Loi: vui long nhap so nguyen.")
+            print("Lỗi: vui lòng nhập số nguyên (ví dụ: 1).", flush=True)
             continue
 
         if lua_chon in (0, 7):
@@ -356,20 +425,10 @@ def vong_lap_thuat_toan(anh_bgr: np.ndarray, ten_anh: str) -> str:
         if lua_chon == 8:
             return "doi_anh"
 
-        if lua_chon == 1:
-            xu_ly_grayscale(anh_bgr)
-        elif lua_chon == 2:
-            xu_ly_thresholding(anh_bgr)
-        elif lua_chon == 3:
-            xu_ly_histogram(anh_bgr)
-        elif lua_chon == 4:
-            xu_ly_mean_filter(anh_bgr)
-        elif lua_chon == 5:
-            xu_ly_gaussian_filter(anh_bgr)
-        elif lua_chon == 6:
-            xu_ly_sobel(anh_bgr)
+        if 1 <= lua_chon <= 6:
+            thuc_thi_thuat_toan(lua_chon, anh_bgr)
         else:
-            print("Loi: lua chon khong hop le. Nhap 1-8, 0 hoac 7 de thoat.")
+            print("Lỗi: lựa chọn không hợp lệ. Nhập 1-8, 0 hoặc 7 để thoát.", flush=True)
 
 
 def main() -> None:
@@ -384,24 +443,25 @@ def main() -> None:
         danh_sach = quet_danh_sach_anh()
         if not danh_sach:
             print(
-                f"\nLoi: khong co anh trong thu muc '{IMAGE_DIR.resolve()}'.\n"
-                f"Hay them file .jpg, .jpeg, .png hoac .bmp vao thu muc image/."
+                f"\nLỗi: không có ảnh trong thư mục '{IMAGE_DIR.resolve()}'.\n"
+                f"Hãy thêm file .jpg, .jpeg, .png hoặc .bmp vào thư mục image/.",
+                flush=True,
             )
             sys.exit(1)
 
         duong_dan_anh = chon_anh(danh_sach)
         if duong_dan_anh is None:
-            print("\nKet thuc chuong trinh.")
+            print("\nKết thúc chương trình.", flush=True)
             break
 
         anh = doc_anh(duong_dan_anh)
         if anh is None:
-            print(f"Loi: khong doc duoc anh '{duong_dan_anh.name}'.")
+            print(f"Lỗi: không đọc được ảnh '{duong_dan_anh.name}'.", flush=True)
             continue
 
         ket_qua = vong_lap_thuat_toan(anh, duong_dan_anh.name)
         if ket_qua == "thoat":
-            print("\nKet thuc chuong trinh.")
+            print("\nKết thúc chương trình.", flush=True)
             break
 
 
